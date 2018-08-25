@@ -1,0 +1,93 @@
+https://www.cnblogs.com/ronyjay/p/6543703.html
+
+第一步先确定下steam网站游戏的URLs
+
+http://store.steampowered.com/search/?page=1
+
+把这个url作为我们的start_urls
+
+复制代码
+from scrapy.spiders import Spider
+from scrapy.selector import Selector
+
+
+class SteamUrls(Spider):
+    name = "steamurl"
+    allowed_domains = ["steampowered.com"]
+    start_urls=[
+        "http://store.steampowered.com/search/?page=1"
+    ]
+    def parse(self,response):
+        sel = Selector(response)
+        links = sel.xpath("//a[@class='search_result_row ds_collapse_flag app_impression_tracked']/@href").extract()
+        for link in links:
+            print link
+            
+            
+复制代码
+然后先获取第一页的所有游戏的urls，然而我发现这样毛都打印不出来，想了一下，FirePath定位到了，取值也没有错，阿西吧，为什么会打印不出内容呢。
+
+后来求助于程序员GG
+
+发现了一个问题：爬虫所看到的是网页的源码，而我在用firefox的FirePath定位元素时，是基于网页渲染完成的基础上的
+
+这两者还是有一定的区别，以前我在用xpath定位的经验是在做自动化测试，用selenium基础上的，而selenium的基础便是建立在网页已经渲染完成的基础上的
+
+所以我修改了一下xpath的写法
+
+复制代码
+from scrapy.spiders import Spider
+from scrapy.selector import Selector
+
+
+class Steanyurls(Spider):
+    name = "steamurl"
+    allowed_domains = ["steampowered.com"]
+    start_urls=[
+        "http://store.steampowered.com/search/?page=1"
+    ]
+    def parse(self,response):
+        sel = Selector(response)
+        links = sel.xpath("//div[@id='search_result_container']/div[2]//@href").extract()
+        for link in links:
+            print link
+            
+            
+复制代码
+这样便获取到了第一页的25条数据
+
+然后新设置一个循环，爬取其余页面的数据，这里用到了一个yield函数
+
+复制代码
+from scrapy.spiders import Spider
+from scrapy.selector import Selector
+from scrapy.http import Request
+
+
+class SteamUrls(Spider):
+    name = "steamurl"
+    allowed_domains = ["steampowered.com"]
+    start_urls=[
+        "http://store.steampowered.com/search/?page=1"
+    ]
+    def parse(self,response):
+        sel = Selector(response)
+        links = sel.xpath("//div[@id='search_result_container']/div[2]//@href").extract()
+        for link in links:
+            print link
+        PageList= range(2,11)
+        for i in PageList:
+             url2='http://store.steampowered.com/search/?page='+str(i)
+             yield Request(url2,callback=self.parse)
+            
+            
+复制代码
+这里爬出来没有按照规则，比如先爬取了第八页的数据，然后爬取了第五页的数据，请教过后说是没有默认的顺序，给了url就会去爬
+
+ 
+
+到目前为止不打算在继续写爬虫的日志了，这里仅仅是很多框架的demo
+
+解析网页的东西就太多了，会见招拆招了
+
+我走的很慢，但从不后退
