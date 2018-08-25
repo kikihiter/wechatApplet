@@ -1,0 +1,208 @@
+https://www.cnblogs.com/FxxL/p/8410549.html
+
+语言：python
+
+环境：ubuntu
+
+爬取内容：steam游戏标签，评论，以及在 steamspy 爬取对应游戏的销量
+
+使用相关：urllib，lxml，selenium，chrome
+
+解释：
+
+　　流程图如下
+
+
+
+　　1.首先通过 steam 商店搜索页面的链接，打开 steam 搜索页面，然后用如下正则表达式来得到前100个左右的游戏的商店页面链接。
+
+reg = r'<a href="(http://store.steampowered.com/app/.+?)"'
+　　2.对于得到的每个商店页面链接，可以通过如下正则表达式来得到对应的有游戏名称.
+
+reg = r'.+?/app/[0-9]+?/(.+?)/'
+　　　例如如下链接 http://store.steampowered.com/app/268910/Cuphead/ ，可以得到游戏名字为Cuphead。
+
+　　3.然后通过 selenium 来模拟 chrome 上的操作，以获取动态加载的网页。先打开网页 steamspy，然后在网页上检查元素，看源码，发现搜索框元素的 name 值为”s”，所以可以通过 driver.find_element_by_name("s") 找到搜索框，模拟输入对应的游戏名字。进行搜索，得到了新的页面，再通过如下正则表达式得到销量
+
+reg = r'<strong>Owners</strong>:\s+?([0-9,]+?)\s+?'
+　　　例如上面那个网址对应应当输入 Cuphead。
+
+　　4.得到游戏标签，这一步比较简单，打开商店链接，得到源码，然后通过如下正则表达式获取标签即可
+
+reg=r'>\s+?([^\t]+?)\s+?</a><a href="http://store.steampowered.com/tag.+?"\s+?class="app_tag"'
+　　5.得到游戏评论。由于 steam 商店评论是动态加载的，所以要又通过 selenium 来模拟 chrome 的操作，首先进入商店页面，因为有些商店是有年龄确认的按钮存在，那么通过 xpath 来找 viewpage 的按钮，如果有按钮则模拟点击操作，否则不点击。代码如下
+
+driver.find_element_by_xpath("//span[text()='View Page']").click()
+　　6.这样就进入了商店页面，然后类似地，通过xpath找到加载评论的按钮，加载评论，代码如下。
+
+driver.find_element_by_xpath("//span[starts-with(@class,'game_review_summary')]").click()
+　　7.再通过xpath找到多条评论的链接，代码如下。
+
+elements = driver.find_elements_by_xpath("//a[starts-with(@href,'http://steamcommunity.com/id')]")
+　　8.得到评论链接之后，打开评论链接，并通过如下正则表达式来得到评论正文内容。
+
+reg = r'<div\s+?id="ReviewText">(.+?)</div>'
+ 
+
+ 
+
+代码：
+
+
+复制代码
+  1 import urllib
+  2 import re
+  3 import sys
+  4 import lxml
+  5 from selenium import webdriver
+  6 from selenium.webdriver.common.keys import Keys
+  7 
+  8 def getHtml(url):
+  9     page = urllib.urlopen(url)
+ 10     html = page.read()
+ 11     return html
+ 12 
+ 13 def getGameLink(html):
+ 14     reg = r'<a href="(http://store.steampowered.com/app/.+?)"'
+ 15     gamelinkre = re.compile(reg)
+ 16     gamelinklist = re.findall(gamelinkre,html)
+ 17     return gamelinklist
+ 18 
+ 19 def getTag(html):
+ 20     reg = r'>\s+?([^\t]+?)\s+?</a><a href="http://store.steampowered.com/tag.+?"\s+?class="app_tag"'
+ 21     tagre = re.compile(reg)
+ 22     taglist = re.findall(tagre,html)
+ 23     return taglist
+ 24 
+ 25 def getReviewLink(url):
+ 26     gamereviewlinklist = []
+ 27     driver = webdriver.Chrome()
+ 28     flag = True
+ 29     try:
+ 30         driver.get(url)
+ 31         driver.implicitly_wait(30)
+ 32         flag = True
+ 33     except:
+ 34         return gamereviewlinklist
+ 35     try:
+ 36         driver.find_element_by_xpath("//span[text()='View Page']").click()
+ 37         driver.implicitly_wait(30)
+ 38         flag = True
+ 39     except:
+ 40         flag = False
+ 41     try:
+ 42         driver.find_element_by_xpath("//span[starts-with(@class,'game_review_summary')]").click()
+ 43         driver.implicitly_wait(30)
+ 44         flag = True
+ 45     except:
+ 46         flag = False
+ 47     if(flag == False):
+ 48         driver.quit()
+ 49         return gamereviewlinklist
+ 50     elements = driver.find_elements_by_xpath("//a[starts-with(@href,'http://steamcommunity.com/id')]")
+ 51     pattern = re.compile(r'recommended/.+')
+ 52     for element in elements:
+ 53         url = element.get_attribute("href") 
+ 54         if(re.search(pattern,url)):
+ 55            gamereviewlinklist.append(url) 
+ 56     driver.quit()
+ 57     return gamereviewlinklist
+ 58 
+ 59 def getReview(html):
+ 60     reg = r'<div\s+?id="ReviewText">(.+?)</div>'
+ 61     reviewre = re.compile(reg)
+ 62     reviewlist = re.findall(reviewre,html)
+ 63     reviewlist.append("")
+ 64     print reviewlist[0]
+ 65     return reviewlist[0]
+ 66 
+ 67 def getSale(url):
+ 68     searchwebname="http://steamspy.com/search.php"
+ 69     reg = r'.+?/app/[0-9]+?/(.+?)/'
+ 70     namere = re.compile(reg)
+ 71     nameresult = re.findall(namere,url)
+ 72     name = nameresult[0]
+ 73     print name
+ 74     driver = webdriver.Chrome()
+ 75     driver.get(searchwebname)
+ 76     driver.implicitly_wait(30)
+ 77     flag = True
+ 78     elem = driver.find_element_by_name("s")
+ 79     elem.clear()
+ 80     elem.send_keys(name)
+ 81     driver.implicitly_wait(30)
+ 82     elem.send_keys(Keys.RETURN)
+ 83     driver.implicitly_wait(30)
+ 84     pagesource = driver.page_source
+ 85     reg = r'<strong>Owners</strong>:\s+?([0-9,]+?)\s+?'
+ 86     salere = re.compile(reg)
+ 87     saleresult = re.findall(salere,pagesource)
+ 88     sale = "-1"
+ 89     if len(saleresult)>0:  
+ 90         sale = saleresult[0]
+ 91     print sale
+ 92     driver.quit()
+ 93     return sale
+ 94 
+ 95 
+ 96 reload(sys)
+ 97 sys.setdefaultencoding('utf-8')
+ 98 
+ 99 urls = []
+100 inputfilename = "urls.txt"
+101 inputfile = file(inputfilename,'r')
+102 emptyflag = 0
+103 while not emptyflag:
+104     nowline = inputfile.readline()
+105     if(nowline == ""):
+106         emptyflag = 1
+107     else:
+108         urls.append(nowline)
+109 inputfile.close()
+110 
+111 gamelinklist = []
+112 for urli in urls:
+113     html = getHtml(urli)
+114     gamelinklist.extend(getGameLink(html))
+115 
+116 salefilename = "gamesales.txt"
+117 salefile = file(salefilename,"w")
+118 for gamelinki in gamelinklist:
+119     sale = getSale(gamelinki)
+120     print sale
+121     print >> salefile,gamelinki
+122     print >> salefile,sale
+123     print >> salefile,"sale end"
+124     print gamelinki+"--sale end"
+125 salefile.close()
+126 
+127 tagfilename = "gametags.txt"
+128 tagfile = file(tagfilename,"w")
+129 for gamelinki in gamelinklist:
+130     html = getHtml(gamelinki)
+131     taglist = getTag(html)
+132     print taglist
+133     print >> tagfile,gamelinki
+134     for tagi in taglist:
+135         print >> tagfile,tagi
+136     print >> tagfile,"tag end"
+137     print gamelinki+"--tag end"
+138 tagfile.close()
+139 
+140 reviewfilename = "gamereviews.txt"
+141 reviewfile = file(reviewfilename,"w")
+142 lst = ""
+143 for gamelinki in gamelinklist:
+144     reviewlinklist = getReviewLink(gamelinki)
+145     print reviewlinklist
+146     print >> reviewfile,gamelinki
+147     for reviewlinki in reviewlinklist:
+148         if(reviewlinki != lst):
+149             html = getHtml(reviewlinki)
+150             review = getReview(html)
+151             print >> reviewfile,review
+152             print >> reviewfile,"a review end"
+153             lst = reviewlinki
+154     print >> reviewfile,"review end"
+155     print gamelinki+"--review end"
+156 reviewfile.close()
