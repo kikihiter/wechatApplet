@@ -1,0 +1,306 @@
+https://www.jianshu.com/p/e0eb4635aa07
+
+Nav logo写文章 注册登录
+首页
+下载App
+
+搜索
+×
+零基础制作一个Python 爬虫
+96  alanwangmodify 关注
+2016.09.14 11:16* 字数 516 阅读 5934评论 17喜欢 122
+一、前言
+1、相关介绍：
+采用Python 来进行爬虫的主要原因是： Python语言简洁，使用方便，拥有许多方便进行爬虫的库，如Urllib。
+Python除了爬虫获取数据外，还可以图像处理，数据处理，导出Execl表格等。更多可以看：Python可以用来干嘛？
+
+2、安装Python
+苹果系统上一般默认都装有Python编译器，为Python2.x版本。本文出现的代码都是以Python2.7版本为准。
+如果需要Python3.x或者在windows上运行，就需要自己去安装Python,具体见：安装Python
+
+二、爬虫
+本文中以实现一个爬取网页中的图片的爬虫为例子。
+
+预备知识
+Python基础知识
+Python中urllib库的用法
+Python正则表达式
+Python中re库的用法
+
+1、Python基础知识
+1、Python脚本文件后缀名为.py
+2、#为注释符号
+3、Python中没有花括号{}，用:代替
+
+#eg:
+for url in urls :
+      print url
+4、函数的调用写法与JS相似
+
+#eg
+func(参数)
+5、运行Python
+
+在终端输入：
+
+python **.py
+如果是Python3.x版本输入：
+
+python3 **.py
+2、Python中urllib库的用法
+urlopen 和read
+urlopen：通过一个URL打开一个网页。
+read：读取这个网页。
+
+#eg
+import urllib
+
+url = 'http://www.thejoyrun.com'
+page = urllib.urlopen(url)
+html = page.read()
+print html
+获取网页的源码:
+
+源码截图.png
+本文爬虫的核心为：通过正则表达式在源码中获取图片链接。
+
+urlretrieve
+urlretrieve：根据一个URL,下载相关文件
+
+#eg
+import urllib
+
+urllib.urlretrieve('http://img.mm522.net/flashAll/20120502/1335945502hrbQTb.jpg','%s %s.jpg' % (datetime.datetime.now(),x)) #(URL,文件保存名字)
+3、Python正则表达式
+用\d匹配数字
+用.匹配任意字符
+用\s匹配一个空格
+用*表示任意个数字符
+用+表示至少一个字符
+具体可以看：Python正则表达式
+
+4、Python中re库的用法
+split
+用正则表达式进行字符串切分，获得一个list(可变数组)
+
+#import re
+testStr = 'http://www.thejoyrun.com'
+print re.split(r'\.',testStr)
+match
+用正则表达式进行匹配，如果匹配成功，返回一个Match
+对象，否则返回None
+
+#import re
+
+testStr = 'http://www.thejoyrun.com'
+if re.match(r'http.*com', test): 
+    print 'ok'
+else:
+    print 'failed'
+完整代码
+#coding=utf-8
+import urllib
+import re
+import datetime
+
+def getHtml(url):
+    page = urllib.urlopen(url)
+    html = page.read()
+    return html
+
+def getImg(html):
+
+#    splitReg = r'[\s\"\,\，\']+'
+    splitReg = r'[\s\"]+'  #不区分,
+    tempList = re.split(splitReg,html) #分割后获得一个list （数组）
+    
+    imgUrls = [] #一个空list
+    
+    x = 0
+    for str in tempList :
+        matchReg = r'http:.*.jpg'
+        if re.match(matchReg,str) :
+            print '%s--' %x +str
+            imgUrls.append(str)
+            x = x + 1
+            urllib.urlretrieve(str,'%s %s.jpg' % (datetime.datetime.now(),x))
+        matchReg1 = r'http:.*.png'
+        if re.match(matchReg1,str) :
+            print '%s--' %x +str
+            imgUrls.append(str)
+            x = x + 1
+            urllib.urlretrieve(str,'%s %s.jpg' % (datetime.datetime.now().date(),x))
+    return imgUrls
+
+html = getHtml("网址")
+print(html)
+getImg(html)```
+
+我们用一下网址测试：
+http://cn.bing.com/images/search?q=%E6%85%B5%E6%87%92%E5%B0%91%E5%A5%B3%E5%86%99%E7%9C%9F&FORM=ISTRTH&id=A87C17F9A484F4078C72BEB0FE1EC509BA1F59C8&cat=%E7%BE%8E%E5%A5%B3&lpversion=
+
+下面是这个网址打开的网页的截图：
+![网页截图.png](http://upload-images.jianshu.io/upload_images/1819750-5e75cfdb6fd6d640.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+下面是下载到本地的图片截图：
+![下载到本地的图片截图.png](http://upload-images.jianshu.io/upload_images/1819750-0b046c6fdca2c29c.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+#爬虫框架Scrapy ：
+
+ 我们可以通过urllib库结合正则制作一些入门级别的爬虫，如果需要更强大、更多功能的爬虫则需要借助爬虫框架
+
+```Scrapy``` Python开发的一个快速,高层次的屏幕抓取和web抓取框架，用于抓取web站点并从页面中提取结构化的数据，可以应用在包括数据挖掘，信息处理或存储历史数据等一系列的程序中。
+
+有兴趣的同学可以到[Scrapy](http://doc.scrapy.org/en/latest/)看看
+
+>NOTE:自己实践的时候可以尝试改一下代码，例如把```.jpg```改成```.avi```。
+
+#技术无罪，请勿飙车
+小礼物走一走，来简书关注我
+
+赞赏支持
+ Python © 著作权归作者所有 举报文章
+96 关注alanwangmodify
+写了 25534 字，被 642 人关注，获得了 883 个喜欢
+
+王小树 -- A dog for coding https://github.com/alanwangmodify 邮箱：alanwangmodify@126.com
+喜欢 122    更多分享
+Web note ad 1
+登录 后发表评论
+17条评论 只看作者 按时间倒序按时间正序
+ hyhmnn
+15楼 · 2017.03.07 12:09
+thanks
+
+赞  回复
+ handsomeFu
+14楼 · 2017.03.04 15:42
+IOError: [Errno 22] invalid mode ('wb') or filename: '2017-03-04 15:35:58.222000 1.jpg'
+
+赞  回复
+ handsomeFu
+13楼 · 2017.03.04 15:41
+我想知道这个下载下来的图片保存在哪里，我运行后找不到:joy:
+
+赞  回复
+ AD_我是动态
+12楼 · 2017.03.01 07:23
+学习
+
+赞  回复
+ newbiecoder
+11楼 · 2017.02.27 10:54
+身体又要不好了
+
+赞  回复
+ 夏天_曾
+10楼 · 2017.01.31 12:05
+:heartbeat::heartbeat::heartbeat:
+
+赞  回复
+alanwangmodify：  @夏天_曾 你好summer zeng
+
+2017.02.02 21:31  回复
+ 添加新评论
+ 菜鸟有个大神梦
+9楼 · 2017.01.09 23:38
+tfp = open(filename, 'wb')
+IOError: [Errno 22] invalid mode ('wb') or filename: '2017-01-09 23:35:18.931000 1.jpg'
+
+出现这个问题，不懂原因，求带
+
+赞  回复
+ zhangsongpo
+8楼 · 2016.11.14 00:32
+谢谢分享 很清晰
+
+赞  回复
+ icqapp
+7楼 · 2016.11.08 23:15
+学车
+
+1人赞  回复
+ Jannonx
+6楼 · 2016.11.08 09:02
+漏洞不少啊
+
+赞  回复
+ Jannonx
+5楼 · 2016.11.08 08:41
+报错"AttributeError: 'module' object has no attribute 'urlopen'
+
+赞  回复
+alanwangmodify：  @Jannonx 你用的是python3吧？python3里urlopen 是urlopen2 ,我文章里的代码都只适用2.7。
+
+2016.11.08 09:59  回复
+Jannonx：  @Alan1_iOS 是啊，用的是python3,这么语言变化真多
+
+2016.11.08 10:45  回复
+ 添加新评论
+ 还好不是homo
+4楼 · 2016.11.04 11:52
+奈何 学Python爬虫就是想开车😂
+
+2人赞  回复
+ 没事就爱瞎看
+3楼 · 2016.11.04 01:59
+:smile:
+
+赞  回复
+ CiferZ
+2楼 · 2016.11.01 15:39
+楼主苹果用的什么编译器？
+
+赞  回复
+被以下专题收入，发现更多相似内容
+程序员
+Java Web
+IT在线课程
+代码改变世界
+Python开发
+Pythone...
+Python
+展开更多 
+掘金 Python 系列文章
+Python 函数式编程入门教程 - 后端 - 掘金本文为作者原创，转载请先与作者联系。同发于博客园和 SegmentFault专栏 Functional Programming 引言 Functional Programming(函数式编程)的概念最早起源于LISP，由约...
+
+ 48  掘金官方
+ 240
+爬虫（1）--- Python网络爬虫二三事
+1 前言 作为一名合格的数据分析师，其完整的技术知识体系必须贯穿数据获取、数据存储、数据提取、数据分析、数据挖掘、数据可视化等各大部分。在此作为初出茅庐的数据小白，我将会把自己学习数据科学过程中遇到的一些问题记录下来，以便后续的查阅，同时也希望与各路同学一起交流、一起进步。...
+
+ 48  whenif
+Python系列（一） - 收藏集 - 掘金
+Python 多线程简易入门 - 后端 - 掘金一直懒得写Python相关的文章,恰好有天需要简单的给童鞋们讲点课,仓促之余就诞生了此文. 今天本来准备全面的聊聊有关高性能并发这个话题来着,但是周末马上要来了啊.所以我就取了其中的一点来介绍,关于其他的... GitHub ...
+
+ 48  掘金官方
+Python 系列（四）- 收藏集 - 掘金
+看完这篇文章你还不理解 Python 装饰器，只有一种可能... - 掘金看完这篇文章还不理解装饰器，说明我写的还不够清晰，鼓励鼓励我吧。 讲 Python 装饰器前，我想先举个例子，虽有点污，但跟装饰器这个话题很贴切。 每个人都有的内裤主要功能是用来遮羞，但是到了冬天它没...
+
+ 48  掘金官方
+零基础如何学爬虫技术
+楚江数据是专业的互联网数据技术服务，现整理零基础如何学爬虫技术， 官方网站http://www.chujiangdata.com。 第一：Python爬虫学习系列教程（来源于某博主：http://cuiqingcai.com/1052.html） Python版本：2.7 ...
+
+ 48  楚江数据
+那个我奋不顾身找你的雨天
+今天我的世界下雨了 我忘记了雨伞 想联系你 哪来的理由呢 说好了一个月 离开你 心痛的选择 却也是最好的选择 你和我在玩暧昧 是喜欢的不够 还是勇气不够 你说你不相信爱情 那你相信我吗？ 若你信我， 我会让你相信爱情！ 哈哈，啼笑皆非 你早就退出了 我却迟迟不愿放手 我喜欢...
+
+ 48  小执子之手
+段少侠的荒唐情史（二）
+第二章生死之交田大勇 段少侠从心理咨询室走出来时，长舒一口气，她与心理咨询师谈了约一个小时，讲述了二十几年来人生经历的每一个转折点，当然每一个点都带着浓重的悲剧色彩。这与她自己预料的悲剧人生有着相似的结局。实话说，少侠不算是个悲观的人，她很正面，也很积极，也讨厌那些情绪波动...
+
+ 48  少年阿段
+ 240
+深港通正式起航！今日A股将奔向何方
+周二，沪深两市小幅高开，开盘惯性上冲后出现震荡回落，创业板表现强于主板，主板连创分时新低，午后企稳回升，创业板一直维持在开盘价上方运行，午后创早盘新高。盘中银行股领跌两市，严重拖累了大盘的进一步向上，但题材股接力良好，带动了市场的热情。 盘面上，大盘主力资金周二净流出400...
+
+ 48  谈天看地
+ 240
+舌头红斑是怎么回事？该如何治疗
+经常听到有人说嘴里有红斑，但不知道是怎么回事。据中医介绍，这是属于口腔溃疡的现象，当出现这种现象的时候，甚至连吃饭、喝水都十分困难。这主要是由于火气大的原因所造成的。 舌头红斑的原因 口腔溃疡的发病原因 口腔溃疡又称之为“口疮”，是如常生活中比较常见的一种疾病，主要表现为浅...
+
+ 48  laozongyi
+苦  债
+人生是受苦的漫长过程 每天在煎熬的人们 这点点刻刻的苦积攒着 似是存够我与你相见的债 所受的一分一毫都会偿还一时一秒 直到苦难与情债相抵 就会与你遇见 一起尝一生的甜 各自疾苦 共度心安
+
+ 48  无泪依安
